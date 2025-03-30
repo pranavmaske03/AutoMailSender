@@ -54,29 +54,3 @@ python autosender.py 5  # Runs every 5 minutes
 
 ---
 
-## 🛠 Improvements & Fixes  
-
-🔹 **Replaced hardcoded credentials** with `.env` file for security.  
-🔹 **Fixed incorrect file naming format** for proper timestamped logs.  
-🔹 **Added error handling** for invalid email credentials & connection issues.  
-🔹 **Ensured graceful script termination** when invalid input is provided.  
-🔹 **Added better spacing & readability** in the codebase.  
-
----
-
-## 📺 Future Enhancements  
-
-💡 Add an option to send logs **only for high-memory processes**  
-💡 Implement a **GUI version** for easier configuration  
-💡 Allow **multiple recipients** for log reports  
-💡 Add **log file compression** before sending  
-
----
-
-## 🐜 License  
-
-This project is **open-source** and free to use. Contributions are welcome! 🎉  
-
----
-
-### 🌟 If you find this useful, give it a ⭐ on [GitHub](https://github.com/pranavmaske03/AutoMailSender)!
