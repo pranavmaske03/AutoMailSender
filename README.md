@@ -53,4 +53,8 @@ python autosender.py 5  # Runs every 5 minutes
 4️⃣ The process repeats at **scheduled intervals** using `schedule`.  
 
 ---
+🤝 Contributing
+Contributions are welcome! Please open an issue or submit a pull request.
+
+
 
