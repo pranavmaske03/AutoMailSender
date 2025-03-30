@@ -23,7 +23,7 @@ if not SENDER_EMAIL or not RECEIVER_EMAIL or not EMAIL_APP_PASSWORD:
     exit(1)
 
 def is_connected():
-    """Checks internet connectivity."""
+    """Checks internet connectivity by pinging YouTube."""
     try:
         urllib2.urlopen('http://www.youtube.com', timeout=1)
         return True
@@ -31,122 +31,132 @@ def is_connected():
         return False
 
 def GetProcessInfo():
-    """Retrieves a list of running processes with details."""
+    """
+    Retrieves running processes with:
+    - PID, name, username
+    - Memory usage (VMS in MB and percentage)
+    """
     listprocess = []
     
     for proc in psutil.process_iter():
         try:
-            pinfo = proc.as_dict(attrs=['pid', 'name', 'username'])
-            vms = proc.memory_info().vms / (1024 * 1024)
-            pinfo['vms'] = vms
+            pinfo = proc.as_dict(attrs=['pid', 'name', 'username', 'memory_percent'])
+            pinfo['vms'] = proc.memory_info().vms / (1024 * 1024)  # Virtual Memory Size in MB
             listprocess.append(pinfo)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     
-    return listprocess
+    # Sort by memory usage (descending)
+    return sorted(listprocess, key=lambda x: x['memory_percent'], reverse=True)
 
 def MailSender(filename, log_time):    
-    """Sends an email with the log file as an attachment."""
+    """Sends email with formatted log file attachment."""
     try:
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
         msg['To'] = RECEIVER_EMAIL
-        msg['Subject'] = f"Process log file generated at: {log_time}"
+        msg['Subject'] = f"Process log generated at: {log_time}"
 
         body = f"""
         Hello {RECEIVER_EMAIL},
         
-        Welcome to Marvellous Infosystems.
+        Please find attached the system process log.
         
-        Please find attached document which contains Log of Running process.
+        Report generated at: {log_time}
         
-        Log file is created at: {log_time}
+        This is an auto-generated email.
         
-        This is an auto-generated mail.
-        
-        Thanks & Regards,
-        Auto Mailer
+        Regards,
+        Process Monitor
         """
         msg.attach(MIMEText(body, 'plain'))
 
         with open(filename, "rb") as attachment:
-            p = MIMEBase('application', 'octet-stream')
-            p.set_payload(attachment.read())
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(attachment.read())
         
-        encoders.encode_base64(p)
-        p.add_header('Content-Disposition', f'attachment; filename={filename}')
-        msg.attach(p)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(filename)}"')
+        msg.attach(part)
 
-        s = smtplib.SMTP('smtp.gmail.com', 587)
-        s.starttls()
-        s.login(SENDER_EMAIL, EMAIL_APP_PASSWORD)
-        s.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, msg.as_string())
-        s.quit()
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(SENDER_EMAIL, EMAIL_APP_PASSWORD)
+            server.send_message(msg)
         
-        print("Log file successfully sent through Mail")
+        print(f"Email sent successfully in {time.time() - start_time:.2f} seconds")
     
     except smtplib.SMTPAuthenticationError:
-        print("Error: Authentication failed. Check your email and password in the .env file.")
+        print("Error: Email authentication failed. Check your .env credentials.")
     except smtplib.SMTPException as e:
-        print(f"SMTP error occurred: {e}")
-    except Exception as E:
-        print(f"Unexpected error: {E}")
+        print(f"SMTP Error: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
 
 def ProcessLog(log_dir='LogFile'):
-    """Generates a log file of running processes and sends it via email."""
+    """Generates formatted process log and triggers email."""
     if not os.path.exists(log_dir):
-        os.mkdir(log_dir)
+        os.makedirs(log_dir, exist_ok=True)
     
-    log_path = os.path.join(log_dir, f"Log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.log")
+    timestamp = time.strftime('%Y-%m-%d_%H-%M-%S')
+    log_path = os.path.join(log_dir, f"ProcessLog_{timestamp}.log")
+    
+    processes = GetProcessInfo()
     
     with open(log_path, 'w') as f:
-        f.write("-" * 80 + "\n")
-        f.write("Process Logger: " + time.ctime() + "\n")
-        f.write("-" * 80 + "\n\n")
-        for element in GetProcessInfo():
-            f.write(f"{element}\n")
+        # Formatted header
+        f.write("="*80 + "\n")
+        f.write(f"SYSTEM PROCESS REPORT - {time.ctime()}\n")
+        f.write("="*80 + "\n\n")
+        
+        # Column headers
+        f.write(f"{'PID':<8}{'Name':<25}{'User':<20}{'Memory %':<12}{'VMS (MB)':<12}\n")
+        f.write("-"*80 + "\n")
+        
+        # Process entries
+        for proc in processes:
+            f.write(f"{proc['pid']:<8}{proc['name'][:24]:<25}{proc['username'][:19]:<20}"
+                    f"{proc['memory_percent']:<12.2f}{proc['vms']:<12.2f}\n")
     
-    print(f"Log file is successfully generated at location {log_path}")
+    print(f"Log generated: {log_path}")
     
     if is_connected():
         start_time = time.time()
         MailSender(log_path, time.ctime())
-        print(f'Took {time.time() - start_time:.2f} seconds to send mail')
     else:
-        print("There is no Internet connection")
+        print("Skipped email - No internet connection")
 
 def main():
-    """Main function to schedule and run the process logger."""
-    print("----Auto Mail Sender-----")
-    print("Application name: " + argv[0])
+    """Main execution with scheduling."""
+    print(f"{' Auto Process Monitor ':=^40}")
+    print(f"Started: {time.ctime()}")
     
     if len(argv) != 2:
-        print("Error: Invalid number of arguments")
-        exit()
-    
-    if argv[1] in ["-h", "--H"]:
-        print("This script is used to log records of running processes")
-        exit()
-    
-    if argv[1] in ["-u", "--U"]:
-        print("Usage: Application AbsolutePath_of_Directory")
-        exit()
-    
+        print("Error : please enter the time interval...")
+        print("Usage: python autosender.py <interval_minutes>")
+        exit(1)
+        
     try:
         interval = int(argv[1])
         if interval <= 0:
-            raise ValueError("Interval must be a positive number.")
-
+            raise ValueError("Interval must be > 0")
+            
+        # Immediate first run
+        ProcessLog() 
+        
+        # Scheduled runs
         schedule.every(interval).minutes.do(ProcessLog)
         
         while True:
             schedule.run_pending()
             time.sleep(1)
-    
-    except ValueError:
-        print("Error: Invalid datatype of input")
-    except Exception as E:
-        print("Error: Invalid input:", E)
+            
+    except ValueError as e:
+        print(f"Error: {str(e)}")
+    except KeyboardInterrupt:
+        print("\nMonitoring stopped by user")
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
 
 if __name__ == "__main__":
     main()
