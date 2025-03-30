@@ -58,7 +58,7 @@ Every time the script runs, it generates a new log file with a timestamp in the 
 When configured with Gmail credentials in the .env file, the script can send the log files automatically. It uses Python's built-in smtplib to securely connect to Gmail's email servers. The email includes a friendly message in the body and attaches the latest log file. Before sending, the script checks your internet connection by trying to access youtube.com - if this fails, it waits until the next scheduled run to try again.
 
 ### Scheduling System
-The heart of the automation is the schedule library. When you start the script (like with python autosender.py 5), it sets up a repeating timer that triggers the monitoring process every X minutes (5 in this example). The timer runs in the background while the script keeps working, using very little computer resources between checks.
+The heart of the automation is the schedule library. When you start the script (like with python AutoMailSender.py 5), it sets up a repeating timer that triggers the monitoring process every X minutes (5 in this example). The timer runs in the background while the script keeps working, using very little computer resources between checks.
 
 ### Error Handling
 The script includes several safety checks: it verifies your email credentials are properly configured, handles temporary internet outages gracefully, and skips any system processes that can't be accessed normally. If something goes wrong, it shows clear error messages in the console rather than crashing unexpectedly.
