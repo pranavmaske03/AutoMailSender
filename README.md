@@ -47,10 +47,21 @@ python autosender.py 5  # Runs every 5 minutes
 
 ## 🚀 How It Works  
 
-1️⃣ The script **fetches running processes** and logs them into a file.  
-2️⃣ It **checks internet connectivity** before attempting to send an email.  
-3️⃣ The **log file is emailed** to the configured receiver.  
-4️⃣ The process repeats at **scheduled intervals** using `schedule`.  
+### Process Monitoring
+
+  The script uses Python's psutil library to monitor all active processes on your computer. When triggered, it scans through each running program and collects four key pieces of information: the process ID (a unique number), the program name, which user account started it, and how much virtual memory it's using. This data gets organized into a Python dictionary for easy handling. The script automatically skips any processes it can't access due to permission issues.
+
+### Log File Creation
+Every time the script runs, it generates a new log file with a timestamp in the filename (like "Log_2023-11-15_14-30-00.log"). The file starts with a header showing the exact collection time, followed by a neatly formatted list of all running processes. Each process entry shows the collected information in a consistent layout, making it easy to scan through the report later.
+
+### Email Automation
+When configured with Gmail credentials in the .env file, the script can send the log files automatically. It uses Python's built-in smtplib to securely connect to Gmail's email servers. The email includes a friendly message in the body and attaches the latest log file. Before sending, the script checks your internet connection by trying to access youtube.com - if this fails, it waits until the next scheduled run to try again.
+
+### Scheduling System
+The heart of the automation is the schedule library. When you start the script (like with python autosender.py 5), it sets up a repeating timer that triggers the monitoring process every X minutes (5 in this example). The timer runs in the background while the script keeps working, using very little computer resources between checks.
+
+### Error Handling
+The script includes several safety checks: it verifies your email credentials are properly configured, handles temporary internet outages gracefully, and skips any system processes that can't be accessed normally. If something goes wrong, it shows clear error messages in the console rather than crashing unexpectedly.
 
 ---
 ## 🤝 Contributing
