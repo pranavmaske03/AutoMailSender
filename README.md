@@ -40,7 +40,7 @@ EMAIL_APP_PASSWORD="your-app-password"
 
 ### 4️⃣ Run the script  
 ```sh
-python autosender.py 5  # Runs every 5 minutes
+python AutoMailSender.py 5  # Runs every 5 minutes
 ```
 
 ---
